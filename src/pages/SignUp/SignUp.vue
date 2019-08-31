@@ -1,17 +1,16 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <LogIn />
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import LogIn from '../../components/LogIn'
 
 export default {
-  name: 'app',
+  name: 'sign_up',
   components: {
-    HelloWorld
+    LogIn
   }
 }
 </script>
@@ -21,8 +20,18 @@ export default {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  font-size: 1rem;
+}
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+  background-image: repeating-linear-gradient(180deg, #BDD 0%, #FFF 50%, #BDD 100%);
+  height: 100vh;
 }
 </style>
