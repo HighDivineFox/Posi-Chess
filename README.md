@@ -1,8 +1,13 @@
-# chess-app-v2
+# Posi-Chess
 
 ## Project setup
 ```
 npm install
+```
+
+### Run Server
+```
+npm run start-watch
 ```
 
 ### Compiles and hot-reloads for development
