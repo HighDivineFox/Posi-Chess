@@ -221,6 +221,8 @@ app.post('/api/v1/game/create/', (req, res) => {
             pointAllowance: req.body.points || 15,
             whitePlayer: req.body.whitePlayer,
             blackPlayer: req.body.blackPlayer,
+            whiteStartPos: "",
+            blackStartPos: "",
             ended: false,
             result: "",
             whiteTime: req.body.minutes || 5,
@@ -231,6 +233,33 @@ app.post('/api/v1/game/create/', (req, res) => {
         })
 })
 
+/////
+/// UPDATE START POSITION FOR PLAYER
+/////
+app.post('/api/v1/game/updatePos', (req, res) => {
+
+    console.log(req.body);
+
+    if(req.body.side == 'white'){
+        Game.findByIdAndUpdate(req.body.id, {whiteStartPos: req.body.pos})
+            .exec((err, updatedGame) => {
+                if(err) return res.status(404).send('Unable to update position')
+                
+                console.log(updatedGame);
+
+                return res.send(true)
+            })
+    }else{
+        Game.findByIdAndUpdate(req.body.id, {blackStartPos: req.body.pos})
+            .exec((err, updatedGame) => {
+                if(err) return res.status(404).send('Unable to update position')
+
+                console.log(updatedGame);
+                
+                return res.send(true)
+            })
+    }
+})
 /////
 /// GET GAMES WITH ONLY ONE PLAYER THAT HAVEN'T ENDED
 ////

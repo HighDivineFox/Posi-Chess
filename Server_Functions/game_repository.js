@@ -20,3 +20,8 @@ export function postGame(data) {
     return axios.post(`${BASE_URL}/api/v1/game/create`, data)
         .then(response => response.data)
 }
+
+export function updateStartPosInGame(data) {
+    return axios.post(`${BASE_URL}/api/v1/game/updatePos`, data)
+        .then(response => response.data)
+}

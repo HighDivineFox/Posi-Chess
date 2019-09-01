@@ -9,6 +9,8 @@ const GameSchema = Schema(
         pointAllowance: {type: Number, required: true},
         whitePlayer: {type: String},
         blackPlayer: {type: String},
+        whiteStartPos: {type: String},
+        blackStartPos: {type: String},
         ended: {type: Boolean},
         result: {type: String},
         whiteTime: {type: Number},
