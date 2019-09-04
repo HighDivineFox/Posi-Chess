@@ -145,17 +145,6 @@ app.get('/api/v1/user/username/:username/email/:email', (req, res) => {
 })
 
 /////
-/// USER UPDATE - START SEARCHING
-/////
-app.post('/api/v1/user/looking', (req, res) => {    
-    User.findByIdAndUpdate(req.body.id, {looking_for_game: req.body.status})
-        .exec((err, newUser) => {
-            if(err) return res.status(404).send('Unable to update user')
-            return res.send(req.body.status ? "User added to search list" : "User removed from search list")
-        })
-})
-
-/////
 /// ADD TO SAVED POSITIONS
 /////
 app.post('/api/v1/user/savePos', (req, res) => {
@@ -220,9 +209,9 @@ app.get('/api/v1/game/playerId/:id', (req, res) => {
                 ]
             }
         )
-        .exec((err, game) => {
+        .exec((err, games) => {
             if(err) return res.status(404).send('No games with this player')
-            return res.send(game[0])
+            return res.send(games)
         })
 })
 
@@ -232,8 +221,8 @@ app.get('/api/v1/game/playerId/:id', (req, res) => {
 app.post('/api/v1/game/create/', (req, res) => {
     Game
         .create({
-            PGN: req.body.PGN || null,
-            FEN: req.body.FEN || null,
+            PGN: null,
+            FEN: null,
             pointAllowance: req.body.points || 15,
             whitePlayer: req.body.whitePlayer,
             blackPlayer: req.body.blackPlayer,
@@ -247,6 +236,24 @@ app.post('/api/v1/game/create/', (req, res) => {
             if(err) return res.status(404).send('Unable to create game')
             return res.send(game)
         })
+})
+
+app.post('/api/v1/game/join', (req, res) => {
+    if(req.body.whitePlayer){
+        Game
+            .findByIdAndUpdate(req.body.id, {whitePlayer: req.body.whitePlayer}, {new: true})
+            .exec((err, game) => {
+                if(err) return res.status(404).send('Unable to join game')
+                return res.send(game)
+            })
+    }else if(req.body.blackPlayer){
+        Game
+            .findByIdAndUpdate(req.body.id, {blackPlayer: req.body.blackPlayer}, {new: true})
+            .exec((err, game) => {
+                if(err) return res.status(404).send('Unable to join game')
+                return res.send(game)
+            })
+    }
 })
 
 /////

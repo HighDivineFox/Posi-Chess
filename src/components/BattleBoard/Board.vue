@@ -431,7 +431,7 @@ export default {
     }
 
     .board{
-        width: 80%;
+        width: 100%;
     }
 
     .panel{

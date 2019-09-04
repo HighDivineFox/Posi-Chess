@@ -31,11 +31,6 @@ export function getUserLookingForGame() {
         .then(response => response.data)
 }
 
-export function postUserLookingForGame(id) {
-    return axios.post(`${BASE_URL}/api/v1/user/looking`, id)
-        .then(response => response.data)
-}
-
 export function deleteUserPosition(data) {
     return axios.post(`${BASE_URL}/api/v1/user/deletePos`, data)
         .then(response => response.data)
