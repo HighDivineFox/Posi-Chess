@@ -21,6 +21,11 @@ export function postGame(data) {
         .then(response => response.data)
 }
 
+export function joinGame(data) {
+    return axios.post(`${BASE_URL}/api/v1/game/join`, data)
+        .then(response => response.data)
+}
+
 export function updateStartPosInGame(data) {
     return axios.post(`${BASE_URL}/api/v1/game/updatePos`, data)
         .then(response => response.data)

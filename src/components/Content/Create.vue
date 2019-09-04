@@ -54,8 +54,7 @@
 import '../../js/chessboard-1.0.0'
 import '../../css/chessboard-1.0.0.css'
 
-import { postUserLookingForGame, getUserLookingForGame } from '../../../Server_Functions/user_repository'
-import { postGame, getGameWithPlayerID } from '../../../Server_Functions/game_repository'
+import { postGame, getGameWithPlayerID, getOpenGames, joinGame } from '../../../Server_Functions/game_repository'
 
 export default {
     data: function() {
@@ -73,68 +72,76 @@ export default {
         startSearching(){
             this.searching = true;
 
-            // TODO: Check if there is an existing game in the database
-            // TODO: Make sure you can't match up against yourself
-
             // Look for a game
-            // If game found, attempt to join
-            // If game not found, create a game
-
-            // Search for another is that is looking for a game
-            getUserLookingForGame()
-                .then((data) => {
-                    // if one isn't found, set looking_for_game to true
-                    if(data == ""){
-                        //console.log('no user');
-                        
-                        postUserLookingForGame({id: this.user._id, status: true})
-                            .then((result) => {
-                                //console.log(result)
-                            })
-
-                        // use interval to check for games that have been created with the logged in users id
-                        //console.log('create interval');
-                        this.intervalID = setInterval(() => {this.getGame()}, 1000)
-                    }else{
-                        // create game with found user
+            getOpenGames()
+                .then((games) => {
+                    // If game not found, create a game
+                    if(games.length == 0){ // No games found
                         let body = {}
-                        body['whitePlayer'] = this.user._id
-                        body['blackPlayer'] = data._id
-
+                        if(Math.random() > 0.5){
+                            body['whitePlayer'] = this.user._id
+                            body['blackPlayer'] = ""
+                        }else{
+                            body['whitePlayer'] = ""
+                            body['blackPlayer'] = this.user._id
+                        }
+                        body['points'] = this.pointAllow
+                        body['minutes'] = this.minutes
+                        
+                        // Create game
                         postGame(body)
                             .then((res) => {
-                                //console.log(res)
-                                //console.log('starting interval');
                                 this.intervalID = setInterval(() => {this.getGame()}, 1000)
+                            }).finally(() => {
+                                return
                             })
-                        //console.log(data)
                     }
+
+                    for(var i = 0; i < games.length; i++){
+                        if((games[i].whitePlayer != this.user._id && games[i].whitePlayer != '')){
+                            if(games[i].pointAllowance != this.pointAllow || games[i].whiteTime != this.minutes) continue
+
+                            let body = {
+                                id: games[i]._id,
+                                blackPlayer: this.user._id
+                            }
+                            joinGame(body)
+                                .then((game) => {
+                                    window.location.href = "../battleboard?gameid=" + game._id
+                                })
+                            
+                        }else if(games[i].blackPlayer != this.user._id && games[i].blackPlayer != ''){
+                            if(games[i].pointAllowance != this.pointAllow || games[i].whiteTime != this.minutes) continue
+
+                            let body = {
+                                id: games[i]._id,
+                                whitePlayer: this.user._id
+                            }
+                            joinGame(body)
+                                .then((game) => {
+                                    window.location.href = "../battleboard?gameid=" + game._id
+                                })
+                        } 
+                    }
+
+                    
                 })
         },
 
         stopSearching: function(event){
             this.searching = false;
-            if(this.setInterval) clearInterval(this.intervalID)
-
-            postUserLookingForGame({id: this.user._id, status: false})
-                .then((data) => {
-                    //console.log(data);
-                })
+            if(this.intervalID) clearInterval(this.intervalID)
         },
 
         getGame(){
-            //console.log('repeat?');
-            
             getGameWithPlayerID(this.user._id)
-                .then((data) => {
-                    //console.log('checking if a game was found');
-                    
-                    if(data){
-                        //console.log('game found:', data);
-                        postUserLookingForGame({id: this.user._id, status: false})
-                            .then((res) => {
-                                window.location.href = "../battleboard?gameid=" + data._id
-                            })                        
+                .then((games) => {                    
+                    for(var i = 0; i < games.length; i++){
+                        // If a game has both players and one of them is the user
+                        if((games[i].whitePlayer != '' && games[i].blackPlayer != '') && (games[i].blackPlayer == this.user._id || games[i].whitePlayer == this.user._id)){
+                            window.location.href = "../battleboard?gameid=" + games[i]._id
+                            break
+                        }
                     }
                 })
         }
