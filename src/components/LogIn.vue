@@ -1,35 +1,43 @@
 <template>
-  <div class="wrapper">
-      <div class="flex-row">
-        <div class="title" :class="{active: mode == 'login'}" @mouseup="changeMode('login')">Sign In</div>
-        <div class="title" :class="{active: mode == 'register'}" @mouseup="changeMode('register')">Register</div>
-      </div>
-      
-      <div v-if="mode == 'login'" class="flex-col" @keyup.enter="logIn">
-        <input type="email" name="email" id="email" placeholder="email" @keyup="clearStyle">
-        <input type="password" name="password" id="password" placeholder="password">
-        <input type="button" value="Sign In" @mouseup="logIn" class="submit">
-      </div>
+    <div>
+        <Header />
+        <div class="sign-in-wrapper">
 
-      <div v-if="mode == 'register'" class="flex-col" @keyup.enter="registerUser">
-          <input type="text" name="reg-name" id="reg-name" placeholder="name">
-          <input type="text" name="reg-username" id="reg-username" placeholder="username" @focus="usernameValidation" @keyup="usernameValidation">
-          <input type="email" name="reg-email" id="reg-email" placeholder="email" @focus="emailValidation" @keyup="emailValidation">
-          <input type="password" name="reg-password" id="reg-password" placeholder="password" @focus="passwordValidation" @keyup="passwordValidation">
-          <input type="password" name="reg-confirm" id="reg-confirm" placeholder="confirm password" @focus="confirmValidation" @keyup="confirmValidation">
-          <input type="button" value="Register" @mouseup="registerUser" class="submit">
-      </div>
+            <div class="flex-row">
+                <div class="title" :class="{active: mode == 'login'}" @mouseup="changeMode('login')">Sign In</div>
+                <div class="title" :class="{active: mode == 'register'}" @mouseup="changeMode('register')">Register</div>
+            </div>
+            
+            <div v-if="mode == 'login'" class="flex-col" @keyup.enter="logIn">
+                <input type="email" name="email" id="email" placeholder="email" @keyup="clearStyle">
+                <input type="password" name="password" id="password" placeholder="password" @keyup="signInPasswordValidation">
+                <input type="button" value="Sign In" @mouseup="logIn" class="submit">
+            </div>
 
-      <div v-for="(error, index) in errors" :key="index">
-          {{error}}
-      </div>
-      
-  </div>
+            <div v-if="mode == 'register'" class="flex-col" @keyup.enter="registerUser">
+                <input type="text" name="reg-name" id="reg-name" placeholder="name">
+                <input type="text" name="reg-username" id="reg-username" placeholder="username" @focus="usernameValidation" @keyup="usernameValidation">
+                <input type="email" name="reg-email" id="reg-email" placeholder="email" @focus="emailValidation" @keyup="emailValidation">
+                <input type="password" name="reg-password" id="reg-password" placeholder="password" @focus="passwordValidation" @keyup="passwordValidation">
+                <input type="password" name="reg-confirm" id="reg-confirm" placeholder="confirm password" @focus="confirmValidation" @keyup="confirmValidation">
+                <input type="button" value="Register" @mouseup="registerUser" class="submit">
+            </div>
+
+            <div v-for="(error, index) in errors" :key="index">
+                {{error}}
+            </div>
+            
+        </div>
+        <Footer />
+    </div>
 </template>
 
 <script>
-import { getUser, userExists, createUser } from '../../Server_Functions/user_repository'
+import { getUser, userExists, createUser, doesUserExist } from '../../Server_Functions/user_repository'
 import VueCookies from 'vue-cookies'
+
+import Header from './Header'
+import Footer from './Footer'
 
 /*
     name: {type: String},
@@ -44,6 +52,10 @@ import VueCookies from 'vue-cookies'
 var errorStyle = "border: 3px solid red; box-shadow: 0px 0px 2px red"
 
 export default {
+    components: {
+        Header,
+        Footer
+    },
     data: function() {
         return {
             mode: "login",
@@ -116,15 +128,28 @@ export default {
                 newUser['email'] = email.value
                 newUser['password'] = password.value
 
-                createUser(newUser)
-                    .then((result) => {
-                        window.$cookies.set('user', result)
-                        window.location.href = "../"
+                // Check if username already exists
+                doesUserExist(username.value, email.value)
+                    .then((userFound) => {
+                        if(userFound){
+                            console.log('User found? ', userFound);
+                            
+                            this.errors.push("Username or email address already exists")
+                            return
+                        }else{
+                            createUser(newUser)
+                                .then((result) => {
+                                    window.$cookies.set('user', result)
+                                    window.location.href = "../"
+                                })
+                        }
                     })
             }
         },
 
         usernameValidation(event){
+            this.errors = this.errors.filter(item => item != "Username or email address already exists")
+
             if(event.target.value.length < 4){
                 event.target.setAttribute("style", errorStyle)
                 if(this.errors.indexOf("Username must be at least 4 characters long") == -1){
@@ -134,9 +159,15 @@ export default {
                 this.clearStyle(event)
                 this.errors = this.errors.filter(item => item != "Username must be at least 4 characters long")
             }
+
+            if(event.target.value.length > 15){
+                event.target.value = event.target.value.slice(0, -(event.target.value.length - 15))
+            }
         },
 
         emailValidation(event){
+            this.errors = this.errors.filter(item => item != "Username or email address already exists")
+
             if(!event.target.validity.valid || event.target.value.length == 0){
                 event.target.setAttribute("style", errorStyle)
                 if(this.errors.indexOf("Please enter a valid email address") == -1){
@@ -158,6 +189,11 @@ export default {
                 this.clearStyle(event)
                 this.errors = this.errors.filter(item => item != "Password must be at least 8 characters long")
             }
+        },
+
+        signInPasswordValidation(event){
+            this.clearStyle(event)
+            this.errors = this.errors.filter(item => item != "Please enter a password")
         },
 
         confirmValidation(event){
@@ -199,7 +235,7 @@ export default {
 </script>
 
 <style scoped>
-    .wrapper{
+    .sign-in-wrapper{
         background-color: #f0f8ff;
         margin: 10px auto;
         padding: 10px;

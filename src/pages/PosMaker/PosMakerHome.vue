@@ -4,19 +4,22 @@
     <div>
       <PosMaker :user="user" />
     </div>
+    <Footer />
   </div>
 </template>
 
 <script>
 import { getUserByID } from '../../../Server_Functions/user_repository'
 import Header from '../../components/Header'
+import Footer from '../../components/Footer'
 import PosMaker from '../../components/PosMaker'
 
 export default {
   name: 'pos_maker',
   components: {
     Header,
-    PosMaker
+    PosMaker,
+    Footer
   },
   data: function() {
     return {

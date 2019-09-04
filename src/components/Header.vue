@@ -8,7 +8,7 @@
         </div>
 
         <UserSettings v-if="user" :user="user" />
-        <div v-else class="sign-in"><a href="./signup">SIGN IN</a></div>
+        <div v-else class="sign-in" @mouseup="loadSignUpPage"><a>SIGN IN</a></div>
       </div>
   </div>
 </template>
@@ -26,6 +26,10 @@ export default {
     methods:{
         goHome(){
             window.location.href = window.location.origin
+        },
+
+        loadSignUpPage(){
+            window.location.href = "./signup"
         }
     }
 }
@@ -34,7 +38,8 @@ export default {
 <style scoped>
     .wrapper{
         height: 80px;
-        width: 100%;
+        max-width: 90%;
+        margin: 0 auto;
 
         display: flex;
         flex-flow: row nowrap;
@@ -54,18 +59,9 @@ export default {
         min-width: max-content;
     }
 
-    @media only screen and (max-width: 600px) {
-        .wrapper{
-            padding: 0;
-        }
-
-        .title{
-            font-size: 180%;
-        }
-    }
-    
     .sign-in{
         padding: 10px;
+        cursor: pointer;
     }
 
     .sign-in:hover{
@@ -77,8 +73,32 @@ export default {
     .flex-row{
         display: flex;
         flex-flow: row nowrap;
+        justify-content: space-between;
         align-items: center;
+
+        height: 60%;
+        min-width: 150px;
+        padding: 5px 10px;
         
-        margin-right: 0px;
+        background-color: rgb(215, 250, 245);
+        box-shadow: 1px 1px 3px black;
+        border-radius: 0.3rem;
+    }
+
+    @media only screen and (max-width: 600px) {
+        .wrapper{
+            padding: 0;
+            max-width: 100%;
+        }
+
+        .title{
+            font-size: 5vh;
+            flex-shrink: 2;
+        }
+
+        .flex-row{
+            min-width: 150px;
+            margin: 0 auto;
+        }
     }
 </style>

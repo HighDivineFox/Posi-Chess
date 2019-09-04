@@ -2,12 +2,14 @@
     <div>
       <Header :user="user"/>
       <Create :user="user"/>
+      <Footer />
     </div>
 </template>
 
 <script>
 import Create from '../../components/Content/Create'
 import Header from '../../components/Header'
+import Footer from '../../components/Footer'
 
 import { getUserByID } from '../../../Server_Functions/user_repository'
 
@@ -16,7 +18,8 @@ import VueCookies from 'vue-cookies'
 export default {
   components:{
     Create,
-    Header
+    Header,
+    Footer
   },
   data: function() {
     return {

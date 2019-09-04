@@ -40,6 +40,7 @@ export default {
     .wrapper{
         position: relative;
         margin-right: 10px;
+        cursor: pointer;
     }
 
     .hidden{

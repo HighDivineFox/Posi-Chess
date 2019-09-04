@@ -97,7 +97,8 @@ app.post('/api/v1/user/create', (req, res) => {
             const newUser = new User({
                 name: req.body.name,
                 username: req.body.username,
-                email: req.body.email,
+                username_lower: req.body.username.toLowerCase(),
+                email: req.body.email.toLowerCase(),
                 password: newPW,
                 rating: 1200,
                 activeGames: [],
@@ -129,7 +130,22 @@ app.get('/api/v1/user/looking', (req, res) => {
 })
 
 /////
-/// USER UPDATE - START SEARCHIN
+/// CHECK IF USER EXISTS OR NOT
+/////
+app.get('/api/v1/user/username/:username/email/:email', (req, res) => {
+    User
+        .find({$or: [
+            {username_lower: req.params.username.toLowerCase()},
+            {email: req.params.email.toLowerCase()}
+        ]})
+        .exec((err, result) => {
+            if(err) /* User not found */ return res.status(404).send(false)
+            return res.send(result.length > 0)
+        })
+})
+
+/////
+/// USER UPDATE - START SEARCHING
 /////
 app.post('/api/v1/user/looking', (req, res) => {    
     User.findByIdAndUpdate(req.body.id, {looking_for_game: req.body.status})
@@ -140,7 +156,7 @@ app.post('/api/v1/user/looking', (req, res) => {
 })
 
 /////
-/// Add to saved positions
+/// ADD TO SAVED POSITIONS
 /////
 app.post('/api/v1/user/savePos', (req, res) => {
     let posOBj = {
@@ -216,8 +232,8 @@ app.get('/api/v1/game/playerId/:id', (req, res) => {
 app.post('/api/v1/game/create/', (req, res) => {
     Game
         .create({
-            PGN: req.body.PGN || "",
-            FEN: req.body.FEN || "",
+            PGN: req.body.PGN || null,
+            FEN: req.body.FEN || null,
             pointAllowance: req.body.points || 15,
             whitePlayer: req.body.whitePlayer,
             blackPlayer: req.body.blackPlayer,
@@ -238,28 +254,86 @@ app.post('/api/v1/game/create/', (req, res) => {
 /////
 app.post('/api/v1/game/updatePos', (req, res) => {
 
-    console.log(req.body);
+    //console.log(req.body);
 
     if(req.body.side == 'white'){
-        Game.findByIdAndUpdate(req.body.id, {whiteStartPos: req.body.pos})
+        Game.findByIdAndUpdate(req.body.id, {whiteStartPos: req.body.pos}, {new: true})
             .exec((err, updatedGame) => {
                 if(err) return res.status(404).send('Unable to update position')
-                
-                console.log(updatedGame);
 
-                return res.send(true)
+                if(updatedGame.whiteStartPos != '' && updatedGame.blackStartPos != ''){
+                    let combinedFEN = combineFEN(updatedGame.whiteStartPos, updatedGame.blackStartPos) + ' w KQkq - 0 1'
+                    updatedGame['FEN'] = combinedFEN
+
+                    Game
+                        .findByIdAndUpdate(req.body.id, {FEN: combinedFEN}, {new: true})
+                        .exec((err, game) => {
+                            if(err) return res.status(404).send('Unable to update position')
+                            return res.send(game)
+                        })
+                }else{
+                    return res.send(updatedGame)
+                }
             })
     }else{
         Game.findByIdAndUpdate(req.body.id, {blackStartPos: req.body.pos})
             .exec((err, updatedGame) => {
                 if(err) return res.status(404).send('Unable to update position')
 
-                console.log(updatedGame);
-                
-                return res.send(true)
+                if(updatedGame.whiteStartPos != '' && updatedGame.blackStartPos != ''){
+                    let combinedFEN = combineFEN(updatedGame.whiteStartPos, updatedGame.blackStartPos) + ' w KQkq - 0 1'
+                    updatedGame['FEN'] = combinedFEN
+
+                    Game
+                        .findByIdAndUpdate(req.body.id, {FEN: combinedFEN}, {new: true})
+                        .exec((err, game) => {
+                            if(err) return res.status(404).send('Unable to update position')
+                            return res.send(game)
+                        })
+                }else{
+                    return res.send(updatedGame)
+                }
             })
     }
 })
+
+var combineFEN = function(whiteHalf, blackHalf){
+    //console.log(blackHalf);
+    let blackReg = /(^.{1,}\/.{1,}\/.{1,}\/.{1,}\/).\/.\/.\//
+    let whiteReg = /\/8\/8\/8(\/.{1,}\/.{1,}\/.{1,}\/.{1,})$/
+    let b = blackHalf.match(blackReg)
+    let w = whiteHalf.match(whiteReg)
+
+    //console.log(b[1]);
+    //console.log(w[1]);
+    
+    let newPos = b[1].slice(0, -1) + w[1]
+    //console.log(newPos);
+
+    return newPos
+  }
+
+/////
+/// UPDATE GAME FEN
+////
+app.post('/api/v1/game/updateFEN/', (req, res) => {
+    Game
+        .findByIdAndUpdate(req.body.id, {FEN: req.body.fen})
+        .exec((err, game) => {
+            if(err) return res.status(404).send('Unable to update FEN for game')
+            return res.send(true)
+        })
+})
+
+app.get('/api/v1/game/getFEN/:id', (req, res) => {
+    Game
+        .findById(req.params.id)
+        .exec((err, game) => {
+            if(err) return res.status(404).send('Unable to get FEN')
+            return res.send(game.FEN)
+        })
+})
+
 /////
 /// GET GAMES WITH ONLY ONE PLAYER THAT HAVEN'T ENDED
 ////

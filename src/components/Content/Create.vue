@@ -76,6 +76,10 @@ export default {
             // TODO: Check if there is an existing game in the database
             // TODO: Make sure you can't match up against yourself
 
+            // Look for a game
+            // If game found, attempt to join
+            // If game not found, create a game
+
             // Search for another is that is looking for a game
             getUserLookingForGame()
                 .then((data) => {
@@ -88,8 +92,8 @@ export default {
                                 //console.log(result)
                             })
 
-                        // use interval to check for games that have been create with the logged in users id
-                        console.log('create interval');
+                        // use interval to check for games that have been created with the logged in users id
+                        //console.log('create interval');
                         this.intervalID = setInterval(() => {this.getGame()}, 1000)
                     }else{
                         // create game with found user
@@ -99,11 +103,11 @@ export default {
 
                         postGame(body)
                             .then((res) => {
-                                console.log(res)
-                                console.log('starting interval');
+                                //console.log(res)
+                                //console.log('starting interval');
                                 this.intervalID = setInterval(() => {this.getGame()}, 1000)
                             })
-                        console.log(data)
+                        //console.log(data)
                     }
                 })
         },
@@ -114,22 +118,22 @@ export default {
 
             postUserLookingForGame({id: this.user._id, status: false})
                 .then((data) => {
-                    console.log(data);
+                    //console.log(data);
                 })
         },
 
         getGame(){
-            console.log('repeat?');
+            //console.log('repeat?');
             
             getGameWithPlayerID(this.user._id)
                 .then((data) => {
-                    console.log('checking if a game was found');
+                    //console.log('checking if a game was found');
                     
                     if(data){
-                        console.log('game found');
+                        //console.log('game found:', data);
                         postUserLookingForGame({id: this.user._id, status: false})
                             .then((res) => {
-                                window.location.href = "../battleboard"
+                                window.location.href = "../battleboard?gameid=" + data._id
                             })                        
                     }
                 })

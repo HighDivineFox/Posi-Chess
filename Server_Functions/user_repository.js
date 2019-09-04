@@ -50,3 +50,8 @@ export function userExists(email) {
     return axios.get(`${BASE_URL}/api/v1/user/email/${email}`)
         .then(response => response.data)
 }
+
+export function doesUserExist(username, email) {
+    return axios.get(`${BASE_URL}/api/v1/user/username/${username}/email/${email}`)
+        .then(response => response.data)
+}

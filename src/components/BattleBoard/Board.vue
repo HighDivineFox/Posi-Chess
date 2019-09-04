@@ -18,7 +18,7 @@
                     Cannot place pieces here
                 </div>
             </div>
-            <div id="board" class="board">Board</div>    
+            <div id="board" class="board" @touchmove="prevent">Board</div>    
         </div>
 
         <div class="flex-col space-between panel">
@@ -34,11 +34,12 @@
                 <div class="timer">{{getPlayerTime()}}</div>
             </div>
         </div>
-
+        <!--
         <div class="dev-panel">
             <input type="button" value="Setup Phase">
             <input type="button" value="Game Phase">
         </div>
+        -->
     </div>
 </template>
 
@@ -47,7 +48,7 @@ import '../../js/chessboard-1.0.0'
 import '../../css/chessboard-1.0.0.css'
 import Chess from 'chess.js'
 
-import { getGame, updateStartPosInGame } from '../../../Server_Functions/game_repository'
+import { getGame, updateStartPosInGame, updateFENInGame, getFENForGame } from '../../../Server_Functions/game_repository'
 
 import PieceCosts from '../Content/PieceCosts'
 
@@ -59,37 +60,55 @@ export default {
         return {
             chess: new Chess(),
             gamePhase: 'setup',
-            gameID: "5d6a3116132dce0e88167d6a" || null,
+            gameID: null,
             game: null,
             board: null,
             pointsSpent: 0,
-            setupTime: 60 * 1,
+            setupTime: 60 * 0.2,
             blackSetupPos: '4k3/8/8/8/8/8/8/8',
             whiteSetupPos: '8/8/8/8/8/8/8/4K3',
             whiteTime: null,
-            blackTime: null,
-            playerTurn: 'white'
+            blackTime: null
         }
     },
     props:{
         user: Object
     },
-    computed:{
-        playerSide(){
-            return this.game.whitePlayer == this.user._id ? 'white' : 'black'
-        }
+    created(){
+        let ref = window.location.search
+        console.log(ref.match(/=(.*)/)[1])
+        this.gameID = ref.match(/=(.*)/)[1]
+        
     },
     mounted(){
         this.enterSetupPhase()
     },
     methods:{
 
+        prevent(e){
+            e.preventDefault()
+        },
+
         startPlayerCountDown(){
             let timerID = setInterval(() => {
-                if(this.playerTurn == 'white'){
+                if(this.chess.turn() == 'w'){
                     this.whiteTime = this.whiteTime - 1 > 0 ? this.whiteTime - 1 : 0
                 }else{
                     this.blackTime = this.blackTime - 1 > 0 ? this.blackTime - 1 : 0
+                }
+
+                if(this.whiteTime <= 0){
+                    this.gamePhase = 'ended'
+                    this.game.result = 'white'
+                    this.game.ended = true
+                    this.game.FEN = this.board.fen()
+                    // Upload to database
+                }else if(this.blackTime <= 0){
+                    this.gamePhase = 'ended'
+                    this.game.result = 'black'
+                    this.game.ended = true
+                    this.game.FEN = this.board.fen()
+                    // Upload to database
                 }
 
                 if(this.gamePhase == 'ended'){
@@ -115,11 +134,15 @@ export default {
             getGame(this.gameID)
                 .then((result) => {
                     this.game = result
+                    console.log(window.$cookies.get('user'))
+                    
+                    let id = window.$cookies.get('user')._id
+
                     this.board = Chessboard('board', {
-                        position: this.playerSide == 'white' ? this.whiteSetupPos : this.blackSetupPos,
+                        position: result.whitePlayer == id ? this.whiteSetupPos : this.blackSetupPos,
                         sparePieces: true,
                         onDrop: this.onDrop,
-                        orientation: this.game.whitePlayer == this.user._id ? 'white' : 'black'
+                        orientation: result.whitePlayer == id ? 'white' : 'black'
                     })
 
                     this.whiteTime = result.whiteTime
@@ -143,36 +166,48 @@ export default {
             // Upload position to game in the database
             let body = {
                 id: this.gameID,
-                side: this.playerSide,
+                side: this.game.whitePlayer == this.user._id ? 'white' : 'black',
                 pos: this.board.fen()
             }
+            
             updateStartPosInGame(body)
                 .then((data) => {
-                    console.log("Position updated:", data);
+                    //console.log("Position updated:", data);
+
+                    // Reset board so it doesn't restrict piece placement
+                    // Apply chess logic
+                    this.board = Chessboard('board', {
+                        position: null,
+                        sparePieces: false,
+                        orientation: data.whitePlayer == this.user._id ? 'white' : 'black',
+                        draggable: true,
+                        onDragStart: this.dragStart,
+                        onDrop: this.playerMove
+                    })
+
+                    this.startPlayerCountDown()
+
+                    // Load combined FEN into chess logic
+                    this.chess.load(data.FEN + ' w KQkq - 0 1')
+                    
+                    // Load FEN into board
+                    this.board.position(this.chess.fen())
+                    
+                    // Let players play
+                    setInterval(() => {
+                        this.checkForUpdate()
+                    }, 500)
+
+                    /*
+                    setInterval(() => {
+                        let moves = this.chess.moves()
+                        let move = moves[Math.floor(Math.random() * moves.length)]
+                        this.chess.move(move)
+
+                        this.board.position(this.chess.fen())
+                    }, 750)
+                    */
                 })
-
-            let savePos = Chessboard.objToFen(this.board.position()) // Not like this
-
-            // Get combined position from database
-
-            // Reset board so it doesn't restrict piece placement
-            // Apply chess logic
-            this.board = Chessboard('board', {
-                position: savePos,
-                sparePieces: false,
-                orientation: this.playerSide == 'white' ? 'white' : 'black',
-                draggable: true
-            })
-
-            this.startPlayerCountDown()
-
-            //console.log(this.board.fen() + ' w KQkq - 0 1')
-
-            // Load combined FEN into chess logic
-            console.log(this.chess.load(this.board.fen() + ' w KQkq - 0 1'))            
-
-            // Load FEN into board
-            this.board.position(this.chess.fen())
 
             // Let players play
             /*
@@ -218,6 +253,14 @@ export default {
             if(this.calculatePoints(newPos) > this.game.pointAllowance) { this.calculatePoints(oldPos);  return 'snapback'}
             
             this.pointsSpent = this.calculatePoints(newPos)
+        },
+
+        dragStart(source, piece, pos, orientation){
+            if(this.chess.turn() == 'w' && piece.match(/b/)) return false
+            if(this.chess.turn() == 'b' && piece.match(/w/)) return false
+
+            if(piece.match(/b/) && this.game.whitePlayer == this.user._id) return false
+            if(piece.match(/w/) && this.game.blackPlayer == this.user._id) return false
         },
 
         calculatePoints(newPos){
@@ -286,7 +329,7 @@ export default {
                 return minutes + ":" + seconds
             }
 
-            if(this.playerSide == 'white'){
+            if(this.game.whitePlayer == this.user._id){
                 let  minutes = Math.floor((this.whiteTime / 60)).toString()
                 if(minutes < 10) minutes = "0" + minutes
 
@@ -316,7 +359,7 @@ export default {
                 return minutes + ":" + seconds
             }
 
-            if(this.playerSide == 'white'){
+            if(this.game.whitePlayer == this.user._id){
                 let  minutes = Math.floor((this.blackTime / 60)).toString()
                 if(minutes < 10) minutes = "0" + minutes
 
@@ -333,6 +376,31 @@ export default {
 
                 return minutes + ":" + seconds
             }
+        },
+
+        playerMove(source, target, piece, newPos,  oldPos, orientation){
+            let validSquares = this.chess.moves({square: source})
+
+            if(this.chess.move(`${source}${target}`, {sloppy: true}) != null){
+                updateFENInGame({id: this.gameID, fen: this.chess.fen()})
+                    .then((result) => {
+                        if(!result){
+                            console.log("Game wasn't able to update");
+                        }
+                    })
+            }else{
+                return 'snapback'
+            }
+        },
+
+        checkForUpdate(){
+            getFENForGame(this.gameID)
+                .then((data) => {
+                    //console.log(data);
+                    
+                    this.chess.load(data)
+                    this.board.position(this.chess.fen())
+                })
         }
     }
 }
@@ -341,7 +409,7 @@ export default {
 <style scoped>
     .flex-row{
         display: flex;
-        flex-flow: row nowrap;
+        flex-flow: row wrap;
         justify-content: center;
     }
 
@@ -363,7 +431,7 @@ export default {
     }
 
     .board{
-        width: 100%;
+        width: 80%;
     }
 
     .panel{
@@ -445,8 +513,12 @@ export default {
     }
 
     @media only screen and (max-width: 600px) {
+        .board-container{
+            width: 100%;
+        }
+
         .board{
-            width: 80%;
+            width: 100%;
         }
     }
 </style>

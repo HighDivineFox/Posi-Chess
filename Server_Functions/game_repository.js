@@ -25,3 +25,13 @@ export function updateStartPosInGame(data) {
     return axios.post(`${BASE_URL}/api/v1/game/updatePos`, data)
         .then(response => response.data)
 }
+
+export function updateFENInGame(data) {
+    return axios.post(`${BASE_URL}/api/v1/game/updateFEN`, data)
+        .then(response => response.data)
+}
+
+export function getFENForGame(data) {
+    return axios.get(`${BASE_URL}/api/v1/game/getFEN/${data}`)
+        .then(response => response.data)
+}
