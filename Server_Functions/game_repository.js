@@ -21,6 +21,11 @@ export function postGame(data) {
         .then(response => response.data)
 }
 
+export function deleteGame(ID) {
+    return axios.get(`${BASE_URL}/api/v1/game/delete/${ID}`)
+        .then(response => response.data)
+}
+
 export function joinGame(data) {
     return axios.post(`${BASE_URL}/api/v1/game/join`, data)
         .then(response => response.data)

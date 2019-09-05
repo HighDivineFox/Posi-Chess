@@ -52,6 +52,8 @@ import { getGame, updateStartPosInGame, updateFENInGame, getFENForGame } from '.
 
 import PieceCosts from '../Content/PieceCosts'
 
+// TODO: Implement waiting for the opponent to join
+
 export default {
     components:{
         PieceCosts

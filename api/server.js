@@ -238,6 +238,21 @@ app.post('/api/v1/game/create/', (req, res) => {
         })
 })
 
+/////
+/// DELETE GAME
+////
+app.get('/api/v1/game/delete/:id', (req, res) => {
+    Game
+        .findByIdAndDelete(req.params.id)
+        .exec((err, result) => {
+            if(err) return res.status(404).send('Unable to delete game')
+            return res.send(true)
+        })
+})
+
+/////
+/// JOIN GAME
+////
 app.post('/api/v1/game/join', (req, res) => {
     if(req.body.whitePlayer){
         Game
@@ -332,6 +347,9 @@ app.post('/api/v1/game/updateFEN/', (req, res) => {
         })
 })
 
+/////
+/// GET FEN FOR GAME
+////
 app.get('/api/v1/game/getFEN/:id', (req, res) => {
     Game
         .findById(req.params.id)

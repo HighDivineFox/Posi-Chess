@@ -3,8 +3,9 @@
       <div class="title" @mouseup="goHome">Posi-Chess</div>
 
       <div class="flex-row">
-        <div>
-            <img :src="require('../assets/gear.png')" />
+        <div class="settings-container">
+            <div class="notification" v-if="notifications.length > 0">&nbsp;</div>
+            <img :src="require('../assets/gear.png')" /> <!-- TODO: Consider changing this to a bell icon -->
         </div>
 
         <UserSettings v-if="user" :user="user" />
@@ -15,10 +16,17 @@
 
 <script>
 import UserSettings from './Header/UserSettings'
+import { getGameWithPlayerID } from '../../Server_Functions/game_repository'
 
 export default {
     components:{
         UserSettings
+    },
+    data: function() {
+        return {
+            initialGames: null,
+            notifications: []
+        }
     },
     props: {
         user: Object
@@ -30,6 +38,40 @@ export default {
 
         loadSignUpPage(){
             window.location.href = "./signup"
+        },
+
+        checkForChanges(){
+            getGameWithPlayerID(this.user._id)
+                .then((games) => {
+                    for(var i = 0; i < this.initialGames.length; i++){
+                        let game = games.find((item) => { return item._id == this.initialGames[i]._id})
+
+                        if(!game) return
+                    
+                        if(game.whitePlayer != this.initialGames[i].whitePlayer || game.blackPlayer != this.initialGames[i].blackPlayer){
+                            // TODO: Don't redirect immediately. Need to show a notification and join from there
+                            this.notifications.push({game})
+                            //window.location.href = "./battleboard?gameid=" + game._id
+                        }
+
+                    }
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        this.checkForChanges()
+                    }, 1000)
+                })
+        }
+    },
+    watch:{
+        user(){
+            getGameWithPlayerID(this.user._id)
+                .then((games) => {
+                    this.initialGames = games
+                })
+                .finally(() => {
+                    this.checkForChanges()
+                })
         }
     }
 }
@@ -100,5 +142,19 @@ export default {
             min-width: 150px;
             margin: 0 auto;
         }
+    }
+
+    .notification{
+        background-color: red;
+        border-radius: 50%;
+        position: absolute;
+        top: -15%;
+        right: -5%;
+        width: 12px;
+        height: 12px;
+    }
+
+    .settings-container{
+        position: relative;
     }
 </style>
