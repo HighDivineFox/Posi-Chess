@@ -2,29 +2,47 @@
     <div class="container">
         <div class="title">Games</div>
         <div class="flex-col">
-            <FindBoard v-for="(game, index) in this.games" :key="index" :id="index" :boardConfig="game"/>
+            <GameDetails v-for="(game, index) in this.games" :key="index" :game="game" :user="user"/>
         </div>
     </div>
 </template>
 
 <script>
 import { getOpenGames } from '../../../Server_Functions/game_repository'
-import FindBoard from './FindBoard'
+import { getUserByID } from '../../../Server_Functions/user_repository'
+
+import GameDetails from './GameDetails'
 
 export default {
     components:{
-        FindBoard
+        GameDetails
     },
     data: function() {
         return {
             games: null
         }
     },
+    props: {
+        user: Object
+    },
     created(){
         getOpenGames()
             .then((result) => {
                 this.games = result
-            })        
+            })
+    },
+    methods:{
+        
+        getPlayer(game){
+            let id = ""
+            if(game.whitePlayer) id = game.whitePlayer
+            if(game.blackPlayer) id = game.blackPlayer
+
+            getUserByID(id)
+                .then((user) => {
+                    return user.username
+            })
+        }
     }
 }
 </script>

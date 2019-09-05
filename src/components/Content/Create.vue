@@ -1,6 +1,6 @@
 <template>
     <div class="settings">
-        <div class="title">Create</div>
+        <div class="title">Rules</div>
 
         <div class="spacer">
             <div class="subtitle">Point allowance</div>
@@ -15,12 +15,12 @@
             <input class="range-style" type="range" name="time" id="time" min="5" max="60" step="1" value="10" v-model="minutes">
         </div>
 
-        <div v-if="!searching">
-            <input type="button" value="Search" @mouseup="startSearching">
+        <div v-if="!creating">
+            <input type="button" value="Create Game" @mouseup="startSearching">
         </div>
 
-        <div v-if="searching">
-            <div class="title">Searching...</div>
+        <div v-if="creating">
+            <div class="title">Creating...</div>
             <div>
                 <input type="button" value="Cancel" @mouseup="stopSearching">
             </div>
@@ -61,8 +61,7 @@ export default {
         return {
             minutes: 5,
             pointAllow: 15,
-            searching: false,
-            intervalID: null
+            creating: false,
         }
     },
     props:{
@@ -70,7 +69,31 @@ export default {
     },
     methods:{
         startSearching(){
-            this.searching = true;
+            this.creating = true;
+
+            // Create Game
+            let body = {}
+            if(Math.random() > 0.5){
+                body['whitePlayer'] = this.user._id
+                body['blackPlayer'] = ""
+            }else{
+                body['whitePlayer'] = ""
+                body['blackPlayer'] = this.user._id
+            }
+            body['points'] = this.pointAllow
+            body['minutes'] = this.minutes
+            
+            // Create game
+            postGame(body)
+                .then((res) => {
+                    if(res){
+                        window.location.href = "../"
+                    }else{
+                        console.log('Game was not created');
+                    }
+                })
+
+            /*
 
             // Look for a game
             getOpenGames()
@@ -126,11 +149,12 @@ export default {
 
                     
                 })
+            
+            */
         },
 
         stopSearching: function(event){
-            this.searching = false;
-            if(this.intervalID) clearInterval(this.intervalID)
+            this.creating = false;
         },
 
         getGame(){

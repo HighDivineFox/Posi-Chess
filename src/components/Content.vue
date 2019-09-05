@@ -2,7 +2,7 @@
   <div>
       <div v-if="user">
           <div class="wrapper">
-            <FindGame />
+            <FindGame :user="user" />
             <CurrentGames :activeGames="user.activeGames" />
             <PositionsList :user="user" />
         </div>
