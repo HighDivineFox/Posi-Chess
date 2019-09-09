@@ -3,8 +3,13 @@
       <div class="title" @mouseup="goHome">Posi-Chess</div>
 
       <div class="flex-row">
-        <div class="settings-container">
+        <div class="settings-container"  @mouseup="toggleGames">
             <div class="notification" v-if="notifications.length > 0">&nbsp;</div>
+            <div v-if="showGames" class="games">
+                <div v-for="(item, index) in notifications" :key="index">
+                    <GameNotification :game="item" :user="user"/>
+                </div>
+            </div>
             <img :src="require('../assets/gear.png')" /> <!-- TODO: Consider changing this to a bell icon -->
         </div>
 
@@ -15,17 +20,20 @@
 </template>
 
 <script>
+import GameNotification from './Content/GameNotification'
 import UserSettings from './Header/UserSettings'
 import { getGameWithPlayerID } from '../../Server_Functions/game_repository'
 
 export default {
     components:{
-        UserSettings
+        UserSettings,
+        GameNotification
     },
     data: function() {
         return {
             initialGames: null,
-            notifications: []
+            notifications: [],
+            showGames: false
         }
     },
     props: {
@@ -49,8 +57,15 @@ export default {
                         if(!game) return
                     
                         if(game.whitePlayer != this.initialGames[i].whitePlayer || game.blackPlayer != this.initialGames[i].blackPlayer){
+
                             // TODO: Don't redirect immediately. Need to show a notification and join from there
-                            this.notifications.push({game})
+                            if(this.notifications.some((e) => { return e._id == game._id})){
+                                // Game alreay in list
+                            }else{
+                                //console.log("Game not in list");
+                                this.notifications.push(game)    
+                            }
+                            
                             //window.location.href = "./battleboard?gameid=" + game._id
                         }
 
@@ -61,6 +76,10 @@ export default {
                         this.checkForChanges()
                     }, 1000)
                 })
+        },
+
+        toggleGames(){
+            this.showGames = !this.showGames
         }
     },
     watch:{
@@ -156,5 +175,17 @@ export default {
 
     .settings-container{
         position: relative;
+    }
+
+    .games{
+        position: absolute;
+        top: 100%;
+        left: -1000%;
+
+        border-radius: 0.4em;
+        background-color: aliceblue;
+        box-shadow: 1px 1px 3px black;
+
+        min-width: max-content;
     }
 </style>

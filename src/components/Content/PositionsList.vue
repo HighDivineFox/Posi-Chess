@@ -39,6 +39,7 @@ export default {
         flex-flow: column nowrap;
 
         min-width: 300px;
+        height: 100%;
     }
 
     .flex-col{

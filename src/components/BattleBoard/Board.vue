@@ -48,7 +48,8 @@ import '../../js/chessboard-1.0.0'
 import '../../css/chessboard-1.0.0.css'
 import Chess from 'chess.js'
 
-import { getGame, updateStartPosInGame, updateFENInGame, getFENForGame } from '../../../Server_Functions/game_repository'
+import { getGame, updateStartPosInGame, updateFENInGame, getFENForGame, connectToGame, joinGame } from '../../../Server_Functions/game_repository'
+import { addGameToHistory } from '../../../Server_Functions/user_repository'
 
 import PieceCosts from '../Content/PieceCosts'
 
@@ -61,7 +62,7 @@ export default {
     data: function() {
         return {
             chess: new Chess(),
-            gamePhase: 'setup',
+            gamePhase: 'pre-game',
             gameID: null,
             game: null,
             board: null,
@@ -70,7 +71,8 @@ export default {
             blackSetupPos: '4k3/8/8/8/8/8/8/8',
             whiteSetupPos: '8/8/8/8/8/8/8/4K3',
             whiteTime: null,
-            blackTime: null
+            blackTime: null,
+            cookieID: null
         }
     },
     props:{
@@ -78,14 +80,74 @@ export default {
     },
     created(){
         let ref = window.location.search
-        console.log(ref.match(/=(.*)/)[1])
+        //console.log(ref.match(/=(.*)/)[1])
         this.gameID = ref.match(/=(.*)/)[1]
-        
     },
     mounted(){
-        this.enterSetupPhase()
+        
+        getGame(this.gameID)
+            .then((result) => {
+                this.game = result
+                //console.log(window.$cookies.get('user'))
+                this.handleJoinGame()
+                
+                this.cookieID = window.$cookies.get('user')._id
+
+                this.board = Chessboard('board', {
+                    position: result.whitePlayer == this.cookieID ? this.whiteSetupPos : this.blackSetupPos,
+                    sparePieces: true,
+                    onDrop: this.onDrop,
+                    orientation: result.whitePlayer == this.cookieID ? 'white' : 'black'
+                })
+
+                this.whiteTime = result.whiteTime
+                this.blackTime = result.blackTime
+
+                document.getElementById('sparePiecesTop').style.display = 'none'
+                this.connect()
+
+            })        
     },
     methods:{
+
+        connect(){
+            let body = {id: this.gameID}
+            if(this.game.whitePlayer == this.cookieID) body['whitePlayer'] = this.cookieID
+            if(this.game.blackPlayer == this.cookieID) body['blackPlayer'] = this.cookieID
+
+            console.log('connecting');
+            
+
+            connectToGame(body)
+                .then((connected) => {                    
+                    if(connected){                        
+                        // Check if both players are connected
+                        getGame(this.gameID)
+                            .then((result) => {
+                                console.log(result);
+                                
+                                if(result.whitePlayerConnected && result.blackPlayerConnected){
+                                    console.log('both players connected!')
+                                    addGameToHistory({user_Id: this.cookieID, game_Id:this.gameID})
+                                        .then((result) => {
+                                            //console.log(result)
+                                            if(this.game.FEN != null){
+                                                //this.gamePhase = "gamestart"
+                                                this.enterGamePhase()
+                                            }else{
+                                                this.enterSetupPhase()
+                                            }
+                                            
+                                        })
+                                }else{
+                                    setTimeout(() => {
+                                        this.connect()
+                                    }, 1000)
+                                }
+                            })
+                    }
+                })
+        },
 
         prevent(e){
             e.preventDefault()
@@ -131,12 +193,13 @@ export default {
         },
 
         enterSetupPhase(){
+            this.gamePhase = 'setup'
             this.startSetupCountdown()
 
             getGame(this.gameID)
                 .then((result) => {
                     this.game = result
-                    console.log(window.$cookies.get('user'))
+                    //console.log(window.$cookies.get('user'))
                     
                     let id = window.$cookies.get('user')._id
 
@@ -179,7 +242,7 @@ export default {
                     // Reset board so it doesn't restrict piece placement
                     // Apply chess logic
                     this.board = Chessboard('board', {
-                        position: null,
+                        position: data.FEN,
                         sparePieces: false,
                         orientation: data.whitePlayer == this.user._id ? 'white' : 'black',
                         draggable: true,
@@ -196,9 +259,7 @@ export default {
                     this.board.position(this.chess.fen())
                     
                     // Let players play
-                    setInterval(() => {
-                        this.checkForUpdate()
-                    }, 500)
+                    this.checkForUpdate()
 
                     /*
                     setInterval(() => {
@@ -210,17 +271,6 @@ export default {
                     }, 750)
                     */
                 })
-
-            // Let players play
-            /*
-            setInterval(() => {
-                let moves = this.chess.moves()
-                let move = moves[Math.floor(Math.random() * moves.length)]
-                this.chess.move(move)
-
-                this.board.position(this.chess.fen())
-            }, 500)
-            */
         },
 
         onDrop(source, target, piece, newPos, oldPos, orientation){
@@ -321,6 +371,8 @@ export default {
         },
 
         getPlayerTime(){
+            if(this.gamePhase == 'pre-game') return "00:00"
+
             if(this.gamePhase == 'setup'){
                 let minutes = Math.floor((this.setupTime / 60)).toString()
                 if(minutes < 10) minutes = "0" + minutes
@@ -351,6 +403,8 @@ export default {
         },
 
         getOpponentTime(){
+            if(this.gamePhase == 'pre-game') return "00:00"
+
             if(this.gamePhase == 'setup'){
                 let minutes = Math.floor((this.setupTime / 60)).toString()
                 if(minutes < 10) minutes = "0" + minutes
@@ -396,12 +450,35 @@ export default {
         },
 
         checkForUpdate(){
+            if(this.gamePhase != "gameStart") return
+
             getFENForGame(this.gameID)
                 .then((data) => {
                     //console.log(data);
                     
                     this.chess.load(data)
                     this.board.position(this.chess.fen())
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        this.checkForUpdate()
+                    }, 500)
+                })
+        },
+
+        handleJoinGame(){
+            //console.log("not implemented yet.", this.game._id);
+            let body = {id: this.game._id}
+            if(this.game.whitePlayer == '') body['whitePlayer'] = this.user._id
+            if(this.game.blackPlayer == '') body['blackPlayer'] = this.user._id
+
+            joinGame(body)
+                .then((game) => {
+                    if(!game){
+                        alert("Game no longer exists");
+                    }else{
+                        window.location.href = "../battleboard?gameid=" + game._id
+                    }
                 })
         }
     }
