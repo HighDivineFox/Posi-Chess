@@ -36,6 +36,11 @@ export function updateStartPosInGame(data) {
         .then(response => response.data)
 }
 
+export function connectToGame(data) {
+    return axios.post(`${BASE_URL}/api/v1/game/connect`, data)
+        .then(response => response.data)
+}
+
 export function updateFENInGame(data) {
     return axios.post(`${BASE_URL}/api/v1/game/updateFEN`, data)
         .then(response => response.data)

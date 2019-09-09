@@ -918,6 +918,8 @@
       var $destSquare = $('#' + squareElsIds[dest])
       var destSquarePosition = $destSquare.offset()
 
+      if(srcSquarePosition == undefined) return
+
       // create the animated piece and absolutely position it
       // over the source square
       var animatedPieceId = uuid()
@@ -926,8 +928,8 @@
       $animatedPiece.css({
         display: '',
         position: 'absolute',
-        top: srcSquarePosition.top,
-        left: srcSquarePosition.left
+        top: srcSquarePosition.top || null,
+        left: srcSquarePosition.left || null
       })
 
       // remove original piece from source square
@@ -1163,6 +1165,8 @@
         if (!squareElsOffsets.hasOwnProperty(i)) continue
 
         var s = squareElsOffsets[i]
+        if(!s) continue // I Added This. Could be bad
+        
         if (x >= s.left &&
             x < s.left + squareSize &&
             y >= s.top &&

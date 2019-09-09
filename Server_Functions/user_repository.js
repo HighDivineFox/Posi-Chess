@@ -50,3 +50,8 @@ export function doesUserExist(username, email) {
     return axios.get(`${BASE_URL}/api/v1/user/username/${username}/email/${email}`)
         .then(response => response.data)
 }
+
+export function addGameToHistory(data) {
+    return axios.post(`${BASE_URL}/api/v1/user/addGame`, data)
+        .then(response => response.data)
+}

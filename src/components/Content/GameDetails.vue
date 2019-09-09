@@ -46,16 +46,16 @@ export default {
 
             joinGame(body)
                 .then((game) => {
-                    window.location.href = "../battleboard?gameid=" + game._id
+                    if(!game){
+                        alert("Game no longer exists");
+                        this.visible = !this.visible
+                    }else{
+                        window.location.href = "../battleboard?gameid=" + game._id
+                    }
                 })
         },
 
         handleCancelGame(){
-            console.log("not implemented yet");
-            
-        },
-
-        toggleVisible(){
             this.visible = !this.visible
             deleteGame(this.game._id)
                 .then((result) => {

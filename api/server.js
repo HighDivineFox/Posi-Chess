@@ -174,6 +174,18 @@ app.post('/api/v1/user/updatePos', (req, res) => {
 })
 
 /////
+/// ADD GAME TO HISTORY
+/////
+app.post('/api/v1/user/addGame', (req, res) => {
+
+    User.findByIdAndUpdate(req.body.user_Id, {$push: {gameHistory: req.body.game_Id}})
+        .exec((err, newUser) => {
+            if(err) return res.status(404).send('Unable to add game to history')
+            return res.send(true)
+        })
+})
+
+/////
 /// REMOVE SAVED POSITION
 /////
 app.post('/api/v1/user/deletePos', (req, res) => {
@@ -228,6 +240,8 @@ app.post('/api/v1/game/create/', (req, res) => {
             blackPlayer: req.body.blackPlayer,
             whiteStartPos: "",
             blackStartPos: "",
+            whitePlayerConnected: false,
+            blackPlayerConnected: false,
             ended: false,
             result: "",
             whiteTime: req.body.minutes || 5,
@@ -267,6 +281,27 @@ app.post('/api/v1/game/join', (req, res) => {
             .exec((err, game) => {
                 if(err) return res.status(404).send('Unable to join game')
                 return res.send(game)
+            })
+    }
+})
+
+/////
+/// UPDATE START POSITION FOR PLAYER
+/////
+app.post('/api/v1/game/connect', (req, res) => {
+    if(req.body.whitePlayer){
+        Game
+            .findByIdAndUpdate(req.body.id, {whitePlayerConnected: true}, {new: true})
+            .exec((err, game) => {
+                if(err) return res.status(404).send('Unable to connect to game')
+                return res.send(true)
+            })
+    }else if(req.body.blackPlayer){
+        Game
+            .findByIdAndUpdate(req.body.id, {blackPlayerConnected: true}, {new: true})
+            .exec((err, game) => {
+                if(err) return res.status(404).send('Unable to connect to game')
+                return res.send(true)
             })
     }
 })

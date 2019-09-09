@@ -11,6 +11,8 @@ const GameSchema = Schema(
         blackPlayer: {type: String},
         whiteStartPos: {type: String},
         blackStartPos: {type: String},
+        whitePlayerConnected: {type: Boolean},
+        blackPlayerConnected: {type: Boolean},
         ended: {type: Boolean},
         result: {type: String},
         whiteTime: {type: Number},
